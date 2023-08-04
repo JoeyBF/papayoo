@@ -1,22 +1,24 @@
 use crate::{
-    card::{Card, Deck},
+    card::{Deck, Suit},
     player::Player,
+    table::Table,
 };
 
 pub struct Game {
-    players: Vec<Player>,
-    current_trick: Vec<Card>,
-    dealer: usize,
+    players: Table<Player>,
+    trump: Suit,
     turn: u32,
 }
 
 impl Game {
-    pub fn new(&self, mut players: Vec<Player>) -> Self {
+    pub fn new(players: Vec<Player>) -> Self {
+        let mut players = Table::new(players);
         let nb_of_players = players.len();
 
-        if nb_of_players > 8 {
-            panic!("Jouez a autre chose.")
-        }
+        assert!(
+            nb_of_players >= 3 && nb_of_players <= 8,
+            "Jouez à autre chose"
+        );
 
         let mut deck = Deck::new();
 
@@ -35,15 +37,35 @@ impl Game {
             }
         }
 
+        let nb_to_choose = match nb_of_players {
+            3 => 5,
+            4 => 5,
+            5 => 4,
+            6 => 3,
+            7 => 3,
+            8 => 3,
+            _ => unreachable!(),
+        };
+        let mut cards_passed = players
+            .iter_mut()
+            .map(|player| player.pass_cards(nb_to_choose))
+            .collect::<Vec<_>>();
+        for player in players.iter_mut_from(1) {
+            player.add_cards(cards_passed.remove(0));
+        }
+
         Self {
             players,
-            current_trick: Vec::new(),
-            dealer: 0,
+            trump: Suit::random(),
             turn: 1,
         }
     }
 
     pub fn play_turn(&mut self) {
+        let mut current_trick = Vec::new();
+        for player in self.players.iter_mut() {
+            current_trick.push(player.next_move(&current_trick));
+        }
         todo!()
     }
 }
