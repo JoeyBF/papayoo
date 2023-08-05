@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use rand::{seq::SliceRandom, Rng};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -22,6 +24,20 @@ impl Suit {
     }
 }
 
+impl Display for Suit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let display = match self {
+            Suit::Spade => "Pique",
+            Suit::Heart => "Coeur",
+            Suit::Club => "Trèfle",
+            Suit::Diamond => "Carreau",
+            Suit::Payoo => "Payoo",
+        }
+        .to_owned();
+        write!(f, "{display}")
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Card {
     suit: Suit,
@@ -35,6 +51,27 @@ impl Card {
 
     pub fn suit(&self) -> Suit {
         self.suit
+    }
+
+    pub fn value(&self) -> u32 {
+        self.value
+    }
+
+    pub fn winner(trick: &[Card]) -> usize {
+        let first_suit = trick[0].suit();
+        trick
+            .iter()
+            .enumerate()
+            .filter(|(_, card)| card.suit() == first_suit)
+            .max_by(|(_, card1), (_, card2)| card1.cmp(card2))
+            .unwrap()
+            .0
+    }
+}
+
+impl Display for Card {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{val} de {suit}", val = self.value, suit = self.suit)
     }
 }
 
@@ -74,5 +111,16 @@ impl Deck {
 
     pub fn draw(&mut self) -> Option<Card> {
         self.cards.pop()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Card, Suit};
+
+    #[test]
+    fn test_card_display() {
+        let card = Card::new(Suit::Heart, 2);
+        assert_eq!("2 de Coeur", format!("{card}"));
     }
 }

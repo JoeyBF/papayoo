@@ -9,7 +9,7 @@ impl Strategy for TrivialStrategy {
         (0..data.nb_to_choose).collect()
     }
 
-    fn next_move(&mut self, _data: NextMoveData) -> usize {
-        0
+    fn next_move(&mut self, data: NextMoveData) -> usize {
+        data.allowed_range.start
     }
 }

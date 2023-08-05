@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use crate::card::{Card, Suit};
 
 mod trivial;
@@ -10,29 +12,29 @@ pub enum StrategyInitData {
 }
 
 pub struct PassCardsData<'a> {
-    nb_to_choose: usize,
     current_hand: &'a [Card],
+    nb_to_choose: usize,
 }
 
 impl<'a> PassCardsData<'a> {
     pub fn new(nb_to_choose: usize, current_hand: &'a [Card]) -> Self {
         Self {
-            nb_to_choose,
             current_hand,
+            nb_to_choose,
         }
     }
 }
 
 pub struct NextMoveData<'a> {
     current_hand: &'a [Card],
-    allowed_cards: &'a [Card],
+    allowed_range: Range<usize>,
 }
 
 impl<'a> NextMoveData<'a> {
-    pub fn new(current_hand: &'a [Card], allowed_cards: &'a [Card]) -> Self {
+    pub fn new(current_hand: &'a [Card], allowed_range: Range<usize>) -> Self {
         Self {
             current_hand,
-            allowed_cards,
+            allowed_range,
         }
     }
 }

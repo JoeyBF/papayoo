@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use crate::{
     card::{Card, Suit},
     strategies::{NextMoveData, PassCardsData, Strategy, StrategyInitData},
@@ -20,6 +22,10 @@ impl Player {
         }
     }
 
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     pub fn init_strategy(&mut self, data: StrategyInitData) {
         self.strategy.init(data)
     }
@@ -30,6 +36,7 @@ impl Player {
 
     pub fn add_card(&mut self, card: Card) {
         self.cards.push(card);
+        self.cards.sort();
     }
 
     pub fn add_cards(&mut self, cards: Vec<Card>) {
@@ -37,47 +44,74 @@ impl Player {
         self.cards.sort();
     }
 
+    pub fn cards(&self) -> &[Card] {
+        &self.cards
+    }
+
+    pub fn add_points(&mut self, trick: Vec<Card>) {
+        self.points.extend(trick.into_iter())
+    }
+
+    pub fn count_points(&self, trump: Suit) -> u32 {
+        self.points
+            .iter()
+            .filter_map(|card| {
+                if card.suit() == Suit::Payoo {
+                    Some(card.value())
+                } else if card.suit() == trump && card.value() == 7 {
+                    Some(40)
+                } else {
+                    None
+                }
+            })
+            .sum()
+    }
+
     pub fn pass_cards(&mut self, nb_to_choose: usize) -> Vec<Card> {
+        self.cards.sort();
         let data = PassCardsData::new(nb_to_choose, &self.cards);
         let mut pass_indices = self.strategy.pass_cards(data);
         pass_indices.sort_unstable_by(|a, b| a.cmp(b).reverse());
         pass_indices
             .into_iter()
-            .map(|index| self.cards.swap_remove(index))
+            .map(|index| self.cards.remove(index))
             .collect()
     }
 
     pub fn next_move(&mut self, current_trick: &[Card]) -> Card {
-        let strategy = &mut self.strategy;
-        let data = if current_trick.is_empty() {
-            NextMoveData::new(&self.cards, &self.cards)
-        } else {
-            NextMoveData::new(&self.cards, self.allowed_cards(current_trick[0].suit()))
-        };
-        let card_idx = strategy.next_move(data);
-        self.cards.swap_remove(card_idx)
+        let data = NextMoveData::new(
+            &self.cards,
+            self.allowed_range(current_trick.get(0).map(Card::suit)),
+        );
+        let card_idx = self.strategy.next_move(data);
+        self.cards.remove(card_idx)
     }
 
-    fn allowed_cards(&self, first_suit: Suit) -> &[Card] {
-        // S,S,H,H,H,H,C,D,D,D,P,P
-        // first_suit = H
-        // first = 2
-        // last = 12 - 6 = 6
-        // allowed = self.cards[2..6]
-        if let Some(first_allowed_idx) =
-            self.cards.iter().position(|card| card.suit() == first_suit)
-        {
-            let last_allowed_idx = self.cards.len()
-                - self
-                    .cards
-                    .iter()
-                    .rev()
-                    .position(|card| card.suit() == first_suit)
-                    .unwrap();
+    fn allowed_range(&self, first_suit: Option<Suit>) -> Range<usize> {
+        if let Some(first_suit) = first_suit {
+            // S,S,H,H,H,H,C,D,D,D,P,P
+            // first_suit = H
+            // first = 2
+            // last = 12 - 6 = 6
+            // allowed = self.cards[2..6]
+            if let Some(first_allowed_idx) =
+                self.cards.iter().position(|card| card.suit() == first_suit)
+            {
+                let last_allowed_idx = self.cards.len()
+                    - self
+                        .cards
+                        .iter()
+                        .rev()
+                        .position(|card| card.suit() == first_suit)
+                        .unwrap();
 
-            &self.cards[first_allowed_idx..last_allowed_idx]
+                Some(first_allowed_idx..last_allowed_idx)
+            } else {
+                None
+            }
         } else {
-            &self.cards
+            None
         }
+        .unwrap_or_else(|| 0..self.cards.len())
     }
 }
