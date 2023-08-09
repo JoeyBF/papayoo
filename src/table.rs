@@ -14,13 +14,8 @@ impl<T> Table<T> {
         self.inner.len()
     }
 
-    pub fn iter_from(&self, index: usize) -> impl Iterator<Item = &T> {
-        let (last_half, first_half) = self.inner.split_at(index);
-        first_half.iter().chain(last_half.iter())
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = &T> {
-        self.iter_from(self.dealer)
+    pub fn into_inner(self) -> Vec<T> {
+        self.inner
     }
 
     pub fn iter_mut_from(&mut self, index: usize) -> impl Iterator<Item = &mut T> {
@@ -33,7 +28,7 @@ impl<T> Table<T> {
     }
 
     pub fn set_dealer(&mut self, new_dealer: usize) {
-        self.dealer = new_dealer;
+        self.dealer = (self.dealer + new_dealer) % self.len();
     }
 }
 
@@ -41,13 +36,19 @@ impl<T> Index<usize> for Table<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
-        &self.inner[(index + self.dealer) % self.inner.len()]
+        &self.inner[(index + self.dealer) % self.len()]
     }
 }
 
 impl<T> IndexMut<usize> for Table<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        let len = self.inner.len();
+        let len = self.len();
         &mut self.inner[(index + self.dealer) % len]
+    }
+}
+
+impl<T> FromIterator<T> for Table<T> {
+    fn from_iter<S: IntoIterator<Item = T>>(iter: S) -> Self {
+        Self::new(iter.into_iter().collect())
     }
 }

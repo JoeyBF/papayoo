@@ -1,9 +1,13 @@
+#![allow(dead_code)]
+
 use std::ops::Range;
 
 use crate::card::{Card, Suit};
 
+mod simple;
 mod trivial;
 
+pub use simple::SimpleStrategy;
 pub use trivial::TrivialStrategy;
 
 pub enum StrategyInitData {
@@ -17,7 +21,7 @@ pub struct PassCardsData<'a> {
 }
 
 impl<'a> PassCardsData<'a> {
-    pub fn new(nb_to_choose: usize, current_hand: &'a [Card]) -> Self {
+    pub fn new(current_hand: &'a [Card], nb_to_choose: usize) -> Self {
         Self {
             current_hand,
             nb_to_choose,
@@ -40,12 +44,18 @@ impl<'a> NextMoveData<'a> {
 }
 
 pub trait Strategy {
-    /// Initialize strategy
+    /// Name of the strategy, for logging purposes.
+    fn name(&self) -> &str;
+
+    /// Initialize strategy.
     fn init(&mut self, data: StrategyInitData);
 
-    /// Strategy that chooses which cards to pass to the next player at the beginning of a game.
+    /// Choose which cards to pass to the next player at the beginning of a game.
     fn pass_cards(&mut self, data: PassCardsData) -> Vec<usize>;
 
-    /// Strategy that chooses which card to play.
+    /// Choose which card to play.
     fn next_move(&mut self, data: NextMoveData) -> usize;
+
+    /// Signal the end of a round, prepare for a new one.
+    fn end_round(&mut self);
 }

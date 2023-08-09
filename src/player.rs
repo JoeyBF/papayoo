@@ -67,9 +67,13 @@ impl Player {
             .sum()
     }
 
+    pub fn clear_points(&mut self) {
+        self.points.clear();
+    }
+
     pub fn pass_cards(&mut self, nb_to_choose: usize) -> Vec<Card> {
         self.cards.sort();
-        let data = PassCardsData::new(nb_to_choose, &self.cards);
+        let data = PassCardsData::new(&self.cards, nb_to_choose);
         let mut pass_indices = self.strategy.pass_cards(data);
         pass_indices.sort_unstable_by(|a, b| a.cmp(b).reverse());
         pass_indices
@@ -85,6 +89,10 @@ impl Player {
         );
         let card_idx = self.strategy.next_move(data);
         self.cards.remove(card_idx)
+    }
+
+    pub fn end_round(&mut self) {
+        self.strategy.end_round();
     }
 
     fn allowed_range(&self, first_suit: Option<Suit>) -> Range<usize> {

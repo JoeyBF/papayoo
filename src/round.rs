@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 use crate::{
     card::{Card, Deck, Suit},
     player::Player,
@@ -14,19 +12,8 @@ pub struct Round {
 }
 
 impl Round {
-    pub fn new(players: Vec<Player>) -> Self {
-        let mut players = Table::new(players);
+    pub fn new(mut players: Table<Player>) -> Self {
         let nb_of_players = players.len();
-
-        assert!(
-            nb_of_players >= 3 && nb_of_players <= 8,
-            "Jouez à autre chose"
-        );
-
-        for player in players.iter_mut() {
-            player.init_strategy(StrategyInitData::Init1 { nb_of_players })
-        }
-
         let mut deck = Deck::new();
 
         let mut to_remove = 1;
@@ -44,11 +31,6 @@ impl Round {
             }
         }
 
-        for player in players.iter() {
-            let cards = player.cards().iter().map(Card::to_string).join(", ");
-            println!("Joueur {name} a: {cards}", name = player.name());
-        }
-
         let nb_to_choose = match nb_of_players {
             3 => 5,
             4 => 5,
@@ -63,28 +45,11 @@ impl Round {
             .map(|player| player.pass_cards(nb_to_choose))
             .collect::<Vec<_>>();
 
-        for player in players.iter() {
-            let cards = player.cards().iter().map(Card::to_string).join(", ");
-            println!("Joueur {name} a maintenant: {cards}", name = player.name());
-        }
-
-        for (idx, cards) in cards_passed.iter().enumerate() {
-            let idx = idx + 1;
-            let cards = cards.iter().map(Card::to_string).join(", ");
-            println!("Joueur {idx} donne: {cards}");
-        }
-
         for player in players.iter_mut_from(1) {
             player.add_cards(cards_passed.remove(0));
         }
 
-        for player in players.iter() {
-            let cards = player.cards().iter().map(Card::to_string).join(", ");
-            println!("Joueur {name} a maintenant: {cards}", name = player.name());
-        }
-
         let trump = Suit::random();
-        println!("La carte à 40 points est le: {}", Card::new(trump, 7));
 
         for player in players.iter_mut() {
             player.init_strategy(StrategyInitData::Init2 { trump })
@@ -97,47 +62,29 @@ impl Round {
         }
     }
 
-    pub fn play_round(&mut self) {
+    pub fn trump(&self) -> Suit {
+        self.trump
+    }
+
+    pub fn play_round(mut self) -> Vec<Player> {
         while self.players[0].cards().len() > 0 {
             self.play_turn();
         }
+        self.players.iter_mut().for_each(Player::end_round);
+        self.players.into_inner()
     }
 
     pub fn play_turn(&mut self) {
         let mut trick = Vec::new();
         for player in self.players.iter_mut() {
             let next_card = player.next_move(&trick);
-            println!(
-                "Joueur {name} joue la carte {next_card}",
-                name = player.name()
-            );
             trick.push(next_card);
         }
         let winner_idx = Card::winner(&trick);
-        println!(
-            "Le gagnant est: Joueur {name}",
-            name = self.players[winner_idx].name()
-        );
         self.players[winner_idx].add_points(trick);
         self.players.set_dealer(winner_idx);
-        self.print_results();
 
         self.turn += 1;
-    }
-
-    fn print_results(&self) {
-        if self.turn == 1 {
-            let title = self.players.iter_from(0).map(Player::name).join(" | ");
-            let separator = "-".repeat(title.chars().count());
-            println!("{title}");
-            println!("{separator}");
-        }
-        let scores = self
-            .players
-            .iter_from(0)
-            .map(|player| player.count_points(self.trump))
-            .join(" | ");
-        println!("{scores}");
     }
 }
 
@@ -153,7 +100,7 @@ mod tests {
             .collect();
         let game = Round::new(players);
 
-        for player in game.players.iter() {
+        for player in game.players.into_inner() {
             for card in player
                 .cards()
                 .iter()
@@ -171,7 +118,7 @@ mod tests {
             .collect();
         let game = Round::new(players);
 
-        for player in game.players.iter() {
+        for player in game.players.into_inner() {
             for card in player
                 .cards()
                 .iter()
