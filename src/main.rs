@@ -1,11 +1,11 @@
 use player::Player;
 use strategies::TrivialStrategy;
 
-use crate::game::Game;
+use crate::round::Round;
 
 mod card;
-mod game;
 mod player;
+mod round;
 mod strategies;
 mod table;
 
@@ -17,7 +17,7 @@ fn main() {
     let player_cinq = Player::new("5".to_owned(), Box::new(TrivialStrategy));
     let player_six = Player::new("6".to_owned(), Box::new(TrivialStrategy));
     let player_sept = Player::new("7".to_owned(), Box::new(TrivialStrategy));
-    let mut game = Game::new(vec![
+    let mut game = Round::new(vec![
         player_un,
         player_deux,
         player_trois,
@@ -26,5 +26,5 @@ fn main() {
         player_six,
         player_sept,
     ]);
-    game.play_game();
+    game.play_round();
 }

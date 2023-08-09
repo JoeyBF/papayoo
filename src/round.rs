@@ -7,13 +7,13 @@ use crate::{
     table::Table,
 };
 
-pub struct Game {
+pub struct Round {
     players: Table<Player>,
     trump: Suit,
     turn: u32,
 }
 
-impl Game {
+impl Round {
     pub fn new(players: Vec<Player>) -> Self {
         let mut players = Table::new(players);
         let nb_of_players = players.len();
@@ -97,7 +97,7 @@ impl Game {
         }
     }
 
-    pub fn play_game(&mut self) {
+    pub fn play_round(&mut self) {
         while self.players[0].cards().len() > 0 {
             self.play_turn();
         }
@@ -143,7 +143,7 @@ impl Game {
 
 #[cfg(test)]
 mod tests {
-    use super::Game;
+    use super::Round;
     use crate::{card::Suit, player::Player, strategies::TrivialStrategy};
 
     #[test]
@@ -151,7 +151,7 @@ mod tests {
         let players = (1..=7)
             .map(|i| Player::new(i.to_string(), Box::new(TrivialStrategy)))
             .collect();
-        let game = Game::new(players);
+        let game = Round::new(players);
 
         for player in game.players.iter() {
             for card in player
@@ -169,7 +169,7 @@ mod tests {
         let players = (1..=8)
             .map(|i| Player::new(i.to_string(), Box::new(TrivialStrategy)))
             .collect();
-        let game = Game::new(players);
+        let game = Round::new(players);
 
         for player in game.players.iter() {
             for card in player
@@ -188,6 +188,6 @@ mod tests {
         let players = (1..=9)
             .map(|i| Player::new(i.to_string(), Box::new(TrivialStrategy)))
             .collect();
-        Game::new(players);
+        Round::new(players);
     }
 }
